@@ -12,7 +12,7 @@ Chaque jeu est tout simple — mais la vitesse monte à chaque manche. 3 cœurs.
 | 💥 Détruis tout ! | 🐈 Caresse le chat | 🎤 Chante juste ! |
 | 🚴 Pédale plus vite ! | 🤿 Nage plus profond ! | 🐟 Caresse le poisson |
 | 🦁 Combat la manticore ! | 💃 Danse danse danse ! | 🥞 Fais sauter la crêpe ! |
-| 🚫 Bloque son numéro ! | 🗣️ Crie un bon coup ! | 🍦 Miam la glace ! |
+| 🚫 Bloque le spam ! | 🗣️ Crie un bon coup ! | 👴 Tâte le vieux ! |
 
 ## Jouer
 

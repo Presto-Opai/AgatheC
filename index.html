@@ -984,7 +984,7 @@ const GAMES = [
 
 /* ---------- 10. BLOQUE SON NUMÉRO ---------- */
 {
-  id: 'block', title: 'BLOQUE SON NUMÉRO !', hint: 'le bouton essaie de fuir, attrape-le 🚫',
+  id: 'block', title: 'BLOQUE LE SPAM !', hint: 'le bouton essaie de fuir, attrape-le 🚫',
   icon: '🚫', bg: ['#44546e','#232c3d'], dur: 5.5,
   init(){
     gs.pw = Math.min(W*0.8, 280*U); gs.ph = Math.min(H*0.62, 420*U);
@@ -1014,13 +1014,14 @@ const GAMES = [
     if (!gs.blocked){
       txt('appel entrant...', cx, gs.py + gs.ph*0.12, 15*U, '#8a93a6');
       const wob = Math.sin(G.t*14)*4*U;
-      txt('🤡', cx, gs.py + gs.ph*0.26 + wob, 52*U, '#000');
-      txt('L’EX', cx, gs.py + gs.ph*0.4, 26*U, '#2a3040');
-      txt('📳 riiing riiing', cx, gs.py + gs.ph*0.49, 15*U, '#8a93a6');
+      txt('🤖', cx, gs.py + gs.ph*0.26 + wob, 52*U, '#000');
+      txt('ARNAQUE PROBABLE', cx, gs.py + gs.ph*0.4, Math.min(20*U, gs.pw/11), '#2a3040');
+      txt('« votre colis a un problème »', cx, gs.py + gs.ph*0.46, 13*U, '#8a93a6');
+      txt('📳 riiing riiing', cx, gs.py + gs.ph*0.53, 15*U, '#8a93a6');
       /* bouton répondre (piège gentil) */
       ctx.fillStyle = '#c8cdd8';
       rr(cx - gs.bw/2, gs.py + gs.ph*0.78, gs.bw, 40*U, 20*U); ctx.fill();
-      txt(gs.noAnswer > 0 ? 'même pas en rêve' : 'répondre', cx, gs.py + gs.ph*0.78 + 20*U, 15*U, '#6a7284');
+      txt(gs.noAnswer > 0 ? 'non merci !' : 'répondre', cx, gs.py + gs.ph*0.78 + 20*U, 15*U, '#6a7284');
       /* bouton BLOQUER */
       ctx.fillStyle = '#e03e3e';
       rr(gs.bx, gs.by, gs.bw, gs.bh, 27*U); ctx.fill();
@@ -1028,7 +1029,7 @@ const GAMES = [
     } else {
       txt('✅', cx, gs.py + gs.ph*0.3, 60*U, '#000');
       txt('BLOQUÉ.', cx, gs.py + gs.ph*0.48, 34*U, '#2aa04f');
-      txt('et voilà. 💅', cx, gs.py + gs.ph*0.6, 20*U, '#8a93a6');
+      txt('tranquillité retrouvée 💅', cx, gs.py + gs.ph*0.6, 18*U, '#8a93a6');
     }
     ctx.restore();
   },
@@ -1101,59 +1102,103 @@ const GAMES = [
   key(k){ if (k === ' ') this.down(); },
 },
 
-/* ---------- 12. MIAM LA GLACE ---------- */
+/* ---------- 12. TÂTE LE VIEUX ---------- */
 {
-  id: 'glace', title: 'MIAM LA GLACE !', hint: 'croque les boules avant qu’elles fondent 🍦',
-  icon: '🍦', bg: ['#bff0dd','#7ecfb4'], dur: 5,
-  init(){
-    gs.scoops = [
-      { c:'#f78fb3', y: -95, r: 34, bites: 2 },
-      { c:'#aef0c0', y: -55, r: 38, bites: 2 },
-      { c:'#a8744f', y: -12, r: 42, bites: 2 },
-    ];
-    gs.left = 6;
+  id: 'vieux', title: 'TÂTE LE VIEUX !', hint: 'masse les jambes de M. Raymond, mains de kiné 💆',
+  icon: '👴', bg: ['#a8c8e8','#4f7096'], dur: 6,
+  init(){ gs.meter = 0; gs.need = 900*U; gs.last = null; gs.happy = 0; gs.ahAt = 0; },
+  table(){
+    const tw = Math.min(W*0.78, 330*U);
+    return { tx: W/2 - tw/2, ty: H*0.56, tw };
   },
-  update(){},
+  legZone(){
+    const t = this.table();
+    return { x: t.tx + t.tw*0.28, y: t.ty - 44*U, w: t.tw*0.72, h: 60*U };
+  },
+  update(dt){ gs.happy = Math.max(0, gs.happy - dt*2.5); },
   draw(){
-    const cx = W/2, cy = H*0.58, s = U*1.15;
-    /* cône */
-    ctx.fillStyle = '#e0a75e';
-    ctx.beginPath(); ctx.moveTo(cx - 38*s, cy); ctx.lineTo(cx + 38*s, cy); ctx.lineTo(cx, cy + 105*s); ctx.fill();
-    ctx.strokeStyle = 'rgba(150,95,40,.5)'; ctx.lineWidth = 2.5*s;
-    for (let i=1;i<4;i++){
-      ctx.beginPath(); ctx.moveTo(cx - 38*s + i*19*s, cy); ctx.lineTo(cx - 5*s + i*8*s, cy + 90*s - i*8*s); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(cx + 38*s - i*19*s, cy); ctx.lineTo(cx + 5*s - i*8*s, cy + 90*s - i*8*s); ctx.stroke();
+    const t = this.table(), s = U;
+    const happy = gs.happy > 0;
+    /* table de massage */
+    ctx.fillStyle = '#7a5a3a'; rr(t.tx, t.ty, t.tw, 13*s, 6*s); ctx.fill();
+    ctx.fillStyle = '#5e4128';
+    rr(t.tx + 14*s, t.ty + 13*s, 10*s, H*0.16, 4*s); ctx.fill();
+    rr(t.tx + t.tw - 24*s, t.ty + 13*s, 10*s, H*0.16, 4*s); ctx.fill();
+    /* M. Raymond assis, jambes allongées */
+    const hx = t.tx + 30*s, hy = t.ty - 78*s;
+    const OSKIN = '#e6b98e';
+    /* torse pyjama */
+    ctx.fillStyle = '#7fa88a'; rr(hx - 23*s, hy + 18*s, 46*s, 46*s, 12*s); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 2*s;
+    for (let i=0;i<3;i++){ ctx.beginPath(); ctx.moveTo(hx - 23*s + 10*s + i*12*s, hy + 20*s); ctx.lineTo(hx - 23*s + 10*s + i*12*s, hy + 62*s); ctx.stroke(); }
+    /* short */
+    ctx.fillStyle = '#5a6b8c'; rr(hx - 6*s, t.ty - 34*s, 42*s, 22*s, 8*s); ctx.fill();
+    /* jambes allongées sur la table */
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = OSKIN; ctx.lineWidth = 15*s;
+    const legEnd = t.tx + t.tw - 34*s;
+    ctx.beginPath(); ctx.moveTo(hx + 28*s, t.ty - 26*s); ctx.lineTo(legEnd, t.ty - 24*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(hx + 28*s, t.ty - 12*s); ctx.lineTo(legEnd, t.ty - 10*s); ctx.stroke();
+    /* genoux */
+    ctx.fillStyle = 'rgba(200,140,90,.5)';
+    ctx.beginPath(); ctx.arc((hx + legEnd)/2, t.ty - 25*s, 4*s, 0, TAU);
+    ctx.arc((hx + legEnd)/2, t.ty - 11*s, 4*s, 0, TAU); ctx.fill();
+    /* chaussettes */
+    ctx.strokeStyle = '#f4f4f4'; ctx.lineWidth = 15*s;
+    ctx.beginPath(); ctx.moveTo(legEnd, t.ty - 24*s); ctx.lineTo(legEnd + 14*s, t.ty - 26*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(legEnd, t.ty - 10*s); ctx.lineTo(legEnd + 14*s, t.ty - 12*s); ctx.stroke();
+    /* tête */
+    ctx.fillStyle = OSKIN;
+    ctx.beginPath(); ctx.arc(hx, hy, 21*s, 0, TAU); ctx.fill();
+    /* touffes blanches + sourcils + moustache */
+    ctx.fillStyle = '#f0f0f0';
+    ctx.beginPath(); ctx.arc(hx - 19*s, hy + 2*s, 6*s, 0, TAU); ctx.arc(hx + 19*s, hy + 2*s, 6*s, 0, TAU); ctx.fill();
+    ctx.strokeStyle = '#f0f0f0'; ctx.lineWidth = 3.5*s;
+    ctx.beginPath(); ctx.moveTo(hx - 13*s, hy - 8*s); ctx.lineTo(hx - 5*s, hy - 9*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(hx + 5*s, hy - 9*s); ctx.lineTo(hx + 13*s, hy - 8*s); ctx.stroke();
+    ctx.lineWidth = 4.5*s;
+    ctx.beginPath(); ctx.arc(hx, hy + 9*s, 8*s, Math.PI*1.15, Math.PI*1.85); ctx.stroke();
+    /* reflet crâne chauve */
+    ctx.fillStyle = 'rgba(255,255,255,.35)';
+    ctx.beginPath(); ctx.arc(hx - 6*s, hy - 12*s, 4*s, 0, TAU); ctx.fill();
+    /* yeux + bouche */
+    ctx.strokeStyle = '#4a382a'; ctx.fillStyle = '#4a382a'; ctx.lineWidth = 2.2*s;
+    if (happy){
+      ctx.beginPath(); ctx.arc(hx - 8*s, hy - 2*s, 4*s, Math.PI*1.1, Math.PI*1.9); ctx.stroke();
+      ctx.beginPath(); ctx.arc(hx + 8*s, hy - 2*s, 4*s, Math.PI*1.1, Math.PI*1.9); ctx.stroke();
+      ctx.beginPath(); ctx.arc(hx, hy + 13*s, 5*s, 0.2, Math.PI - 0.2); ctx.stroke();
+    } else {
+      ctx.beginPath(); ctx.arc(hx - 8*s, hy - 3*s, 2.4*s, 0, TAU); ctx.arc(hx + 8*s, hy - 3*s, 2.4*s, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(hx - 4*s, hy + 15*s); ctx.lineTo(hx + 4*s, hy + 15*s); ctx.stroke();
     }
-    /* boules */
-    for (const sc of gs.scoops){
-      if (sc.bites <= 0) continue;
-      const r = sc.r * (sc.bites === 1 ? 0.62 : 1) * s;
-      ctx.fillStyle = sc.c;
-      ctx.beginPath(); ctx.arc(cx, cy + sc.y*s, r, 0, TAU); ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,.4)';
-      ctx.beginPath(); ctx.arc(cx - r*0.3, cy + sc.y*s - r*0.3, r*0.25, 0, TAU); ctx.fill();
-    }
-    if (gs.scoops[0].bites === 2) txt('🍒', cx + 8*U, cy - 95*s - 30*U, 22*U, '#fff');
-    /* Agathe à côté, très contente */
-    drawAgathe(W*0.78, H*0.62, U*0.95, {
-      mouth: gs.left < 6 ? 'open' : 'smile', mouthSize: 0.8,
-      eyes: 'happy', aL: Math.PI/2 + 0.4, aR: Math.PI + 0.5,
+    if (happy) txt('✨ aaaah magique ✨', W/2, t.ty - 130*U, 22*U, '#fff');
+    /* Agathe la kiné, penchée sur les jambes */
+    const z = this.legZone();
+    drawAgathe(z.x + z.w*0.55, t.ty - 128*U, U*0.85, {
+      legs: false, mouth: 'smile', eyes: 'focus',
+      aL: Math.PI/2 + 0.35 + (happy ? Math.sin(G.t*14)*0.12 : 0),
+      aR: Math.PI/2 - 0.35 - (happy ? Math.sin(G.t*14)*0.12 : 0),
     });
-    txt(`${6 - gs.left} / 6 miam`, W/2, H*0.9, 22*U, 'rgba(30,80,60,.8)');
+    drawMeter(gs.meter/gs.need, '#7fd6a8', '💆');
   },
-  down(p){
-    const cx = W/2, cy = H*0.58, s = U*1.15;
-    for (const sc of gs.scoops){
-      if (sc.bites <= 0) continue;
-      if (Math.hypot(p.x - cx, p.y - (cy + sc.y*s)) < sc.r*s + 22*U){
-        sc.bites--; gs.left--;
-        tone(rnd(300,500), 0.07, 'square', 0.09); vibrate(15);
-        burst(p.x, p.y, 5, { txt: pick(['😋','✨','🍦']), size: 18*U, life: 0.7 });
-        if (gs.left <= 0) winGame();
-        return;
+  move(p){
+    const z = this.legZone();
+    if (!p.down) return;
+    if (p.x > z.x - 20*U && p.x < z.x + z.w + 20*U &&
+        p.y > z.y - 20*U && p.y < z.y + z.h + 20*U && gs.last){
+      const d = Math.min(dist(p, gs.last), 40*U);
+      gs.meter += d; gs.happy = 1; gs.ahAt += d;
+      if (gs.ahAt > 150*U){
+        gs.ahAt = 0;
+        tone(rnd(130, 190), 0.3, 'sine', 0.1, 110);
+        spawn(p.x, p.y, { txt: pick(['✨','😌','💆']), size: 20*U, vy: -120*U, g: 30*U, life: 1 });
       }
+      if (gs.meter >= gs.need) winGame();
     }
+    gs.last = { x: p.x, y: p.y };
   },
+  down(p){ gs.last = { x: p.x, y: p.y }; },
+  up(){ gs.last = null; },
 },
 ];
 
@@ -1185,7 +1230,7 @@ function drawHUD(){
 function drawTitle(){
   bgGrad('#ff5e8a', '#5e2a9e');
   for (let i=0;i<8;i++){
-    txt(['⭐','🐈','🎵','🥞','🦁','🍦','🐟','💥'][i],
+    txt(['⭐','🐈','🎵','🥞','🦁','👴','🐟','💥'][i],
       W*(0.1 + (i%4)*0.26) + Math.sin(G.t + i)*10*U,
       H*(0.1 + Math.floor(i/4)*0.72) + Math.cos(G.t*1.3 + i)*8*U,
       30*U, 'rgba(255,255,255,.8)');
@@ -1221,7 +1266,7 @@ function drawResult(){
   ctx.fillStyle = G.resultWin ? 'rgba(40,180,90,.35)' : 'rgba(180,40,40,.4)';
   ctx.fillRect(0, 0, W, H);
   txtOutline(G.resultTxt, W/2, H*0.42, 54*U, '#fff');
-  txt(G.resultWin ? '⭐' : '💔', W/2, H*0.55, 50*U, '#fff');
+  txt(G.resultWin ? '⭐' : '🙈', W/2, H*0.55, 50*U, '#fff');
 }
 
 function drawOver(){
