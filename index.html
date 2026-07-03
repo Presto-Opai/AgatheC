@@ -361,7 +361,7 @@ const G = {
   best: +(localStorage.getItem('agathe-best') || 0),
   speed: 1,
   timeLeft: 0, timeMax: 1,
-  introT: 0, resultT: 0, resultWin: false, resultTxt: '',
+  playT: 0, resultT: 0, resultWin: false, resultTxt: '',
   shake: 0, t: 0,
   cur: null, lastId: null,
 };
@@ -381,10 +381,10 @@ function nextRound(){
   G.lastId = G.cur.id;
   gs = {};
   G.cur.init();
-  G.timeMax = G.cur.dur / G.speed;
+  G.timeMax = G.cur.dur / G.speed + 0.6;  // +0.6s : démarrage sans écran d'intro
   G.timeLeft = G.timeMax;
-  G.introT = Math.max(0.75, 1.5 / Math.sqrt(G.speed));
-  G.state = 'intro';
+  G.playT = 0;
+  G.state = 'play';
   tone(660, 0.09, 'square', 0.07); setTimeout(()=>tone(880,0.09,'square',0.07), 90);
 }
 function winGame(){
@@ -850,64 +850,95 @@ const GAMES = [
 
 /* ---------- 8. DANSE DANSE DANSE ---------- */
 {
-  id: 'dance', title: 'DANSE DANSE DANSE !', hint: 'tape les flèches dans l’ordre 🕺',
-  icon: '💃', bg: ['#ff5e8a','#c2258f'], dur: 7,
+  id: 'dance', title: 'DANSE DANSE DANSE !', hint: 'tape la flèche quand elle arrive en bas 🕺',
+  icon: '💃', bg: ['#ff5e8a','#c2258f'], dur: 8,
   arrows: ['◀','▲','▼','▶'],
   init(){
-    const n = 4 + Math.min(3, Math.floor(G.round/4));
-    gs.seq = Array.from({length: n}, () => ri(0,3));
-    gs.idx = 0; gs.pose = 0; gs.flash = 0; gs.wrong = 0;
+    gs.need = 4 + Math.min(2, Math.floor(G.round/5));
+    gs.hits = 0; gs.notes = []; gs.spawnT = 0.25;
+    gs.pose = 0; gs.flash = 0; gs.wrong = 0; gs.lastLane = -1;
   },
-  update(dt){ gs.flash = Math.max(0, gs.flash - dt*3); gs.wrong = Math.max(0, gs.wrong - dt*4); },
-  btnPos(i){ return { x: W*(0.14 + i*0.24), y: H*0.86, r: 40*U }; },
+  laneX(i){ return W*(0.14 + i*0.24); },
+  targetY(){ return H*0.84; },
+  update(dt){
+    gs.flash = Math.max(0, gs.flash - dt*3);
+    gs.wrong = Math.max(0, gs.wrong - dt*4);
+    /* les flèches tombent — la chute suit la vitesse de la manche */
+    const vy = H*0.585*G.speed;
+    gs.spawnT -= dt;
+    if (gs.spawnT <= 0){
+      gs.spawnT = 0.55/G.speed;
+      let lane = ri(0,3);
+      if (lane === gs.lastLane) lane = (lane+1)%4;
+      gs.lastLane = lane;
+      gs.notes.push({ lane, y: -30*U });
+    }
+    for (const n of gs.notes) n.y += vy*dt;
+    const missY = this.targetY() + 70*U;
+    for (const n of gs.notes) if (n.y >= missY && !n.missed){ n.missed = true; tone(150, 0.08, 'sawtooth', 0.04); }
+    gs.notes = gs.notes.filter(n => n.y < missY);
+  },
   draw(){
     /* disco */
     for (let i=0;i<5;i++){
-      ctx.fillStyle = `hsla(${(G.t*90 + i*72)%360}, 90%, 65%, .18)`;
-      ctx.beginPath(); ctx.arc(W*(0.1+i*0.2), H*0.12 + Math.sin(G.t*3+i)*20*U, 34*U, 0, TAU); ctx.fill();
+      ctx.fillStyle = `hsla(${(G.t*90 + i*72)%360}, 90%, 65%, .16)`;
+      ctx.beginPath(); ctx.arc(W*(0.1+i*0.2), H*0.3 + Math.sin(G.t*3+i)*24*U, 36*U, 0, TAU); ctx.fill();
     }
-    /* flèche courante géante */
-    const cur = gs.seq[gs.idx];
-    const pulse = 1 + Math.sin(G.t*10)*0.08;
-    txtOutline(this.arrows[cur], W/2, H*0.24, 88*U*pulse, gs.wrong > 0 ? '#ff8080' : '#fff');
-    /* les 3 suivantes en petit */
-    for (let i = gs.idx+1; i < Math.min(gs.seq.length, gs.idx+4); i++){
-      txt(this.arrows[gs.seq[i]], W/2 + (i - gs.idx)*50*U, H*0.24, 26*U, 'rgba(255,255,255,.45)');
-    }
-    txt(`${gs.idx} / ${gs.seq.length}`, W/2, H*0.36, 22*U, 'rgba(255,255,255,.8)');
-    /* Agathe qui danse — pose selon progression */
+    /* Agathe qui danse, derrière les pistes */
     const poses = [
       { aL: Math.PI/2+1.3, aR: -Math.PI/4 },
       { aL: -3*Math.PI/4, aR: -Math.PI/4 },
       { aL: Math.PI/2+0.4, aR: Math.PI/2-0.4 },
       { aL: Math.PI+0.4, aR: -Math.PI/4 },
     ];
-    const p = poses[gs.pose];
-    drawAgathe(W/2, H*0.55, U*1.15, {
-      ...p, mouth: 'smile', eyes: 'happy',
+    drawAgathe(W/2, H*0.42, U*1.05, {
+      ...poses[gs.pose], mouth: 'smile', eyes: 'happy',
       bob: Math.abs(Math.sin(G.t*8))* -10*U,
       hairT: G.t,
     });
-    /* boutons */
+    const ty = this.targetY();
+    /* pistes */
+    ctx.strokeStyle = 'rgba(255,255,255,.16)'; ctx.lineWidth = 3*U;
     for (let i=0;i<4;i++){
-      const b = this.btnPos(i);
-      ctx.fillStyle = (gs.flash > 0 && gs.pose === i) ? 'rgba(255,255,255,.6)' : 'rgba(255,255,255,.28)';
-      ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fill();
-      txt(this.arrows[i], b.x, b.y, 34*U, '#fff');
+      const x = this.laneX(i);
+      ctx.beginPath(); ctx.moveTo(x, H*0.1); ctx.lineTo(x, ty); ctx.stroke();
     }
+    /* cibles */
+    for (let i=0;i<4;i++){
+      const x = this.laneX(i);
+      const near = gs.notes.some(n => n.lane === i && Math.abs(n.y - ty) < 60*U);
+      const hit = gs.flash > 0 && gs.pose === i;
+      ctx.fillStyle = hit ? 'rgba(255,255,255,.65)' : near ? 'rgba(255,255,255,.32)' : 'rgba(255,255,255,.14)';
+      ctx.beginPath(); ctx.arc(x, ty, 40*U, 0, TAU); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 3.5*U;
+      ctx.beginPath(); ctx.arc(x, ty, 40*U, 0, TAU); ctx.stroke();
+      txt(this.arrows[i], x, ty, 32*U, hit ? '#c2258f' : 'rgba(255,255,255,.85)');
+    }
+    /* flèches qui tombent */
+    for (const n of gs.notes){
+      txtOutline(this.arrows[n.lane], this.laneX(n.lane), n.y, 40*U, '#ffde59', 'rgba(0,0,0,.3)');
+    }
+    txt(`${gs.hits} / ${gs.need}`, W*0.06, H*0.16, 20*U, 'rgba(255,255,255,.85)', 'left');
   },
   press(i){
-    if (i === gs.seq[gs.idx]){
-      gs.idx++; gs.pose = i; gs.flash = 1;
-      tone(440 + gs.idx*80, 0.09, 'triangle', 0.11); vibrate(15);
-      spawn(W/2 + rnd(-60,60)*U, H*0.5, { txt: pick(['✨','🎶','💖']), size: 22*U, vy:-140*U, g:60*U, life:0.9 });
-      if (gs.idx >= gs.seq.length) winGame();
+    const ty = this.targetY();
+    let best = null;
+    for (const n of gs.notes){
+      if (n.lane !== i) continue;
+      const d = Math.abs(n.y - ty);
+      if (d < 62*U && (!best || d < Math.abs(best.y - ty))) best = n;
+    }
+    if (best){
+      gs.notes.splice(gs.notes.indexOf(best), 1);
+      gs.hits++; gs.pose = i; gs.flash = 1;
+      tone(440 + gs.hits*70, 0.09, 'triangle', 0.11); vibrate(15);
+      burst(this.laneX(i), ty, 5, { txt: pick(['✨','🎶','💖']), size: 20*U, life: 0.8 });
+      if (gs.hits >= gs.need) winGame();
     } else { gs.wrong = 1; buzz(); }
   },
   down(p){
     for (let i=0;i<4;i++){
-      const b = this.btnPos(i);
-      if (Math.hypot(p.x-b.x, p.y-b.y) < b.r + 14*U){ this.press(i); return; }
+      if (Math.abs(p.x - this.laneX(i)) < W*0.11 && p.y > this.targetY() - 90*U){ this.press(i); return; }
     }
   },
   key(k){
@@ -982,83 +1013,7 @@ const GAMES = [
   key(k){ if (k === ' ') this.down(); },
 },
 
-/* ---------- 10. BLOQUE SON NUMÉRO ---------- */
-{
-  id: 'block', title: 'BLOQUE LE SPAM !', hint: 'le bouton essaie de fuir, attrape-le 🚫',
-  icon: '🚫', bg: ['#44546e','#232c3d'], dur: 5.5,
-  init(){
-    gs.pw = Math.min(W*0.8, 280*U); gs.ph = Math.min(H*0.62, 420*U);
-    gs.px = W/2 - gs.pw/2; gs.py = H*0.16;
-    gs.bw = gs.pw*0.66; gs.bh = 54*U;
-    gs.bx = gs.px + gs.pw/2 - gs.bw/2;
-    gs.by = gs.py + gs.ph*0.62;
-    gs.dodges = 2; gs.blocked = false; gs.shakeP = 0; gs.noAnswer = 0;
-  },
-  update(dt){
-    gs.shakeP = Math.max(0, gs.shakeP - dt*4);
-    gs.noAnswer = Math.max(0, gs.noAnswer - dt);
-    gs.ringT = (gs.ringT || 0) - dt;
-    if (!gs.blocked && gs.ringT <= 0){
-      gs.ringT = 1.1;
-      tone(660, 0.1, 'square', 0.045); setTimeout(() => tone(660, 0.1, 'square', 0.045), 150);
-    }
-    if (gs.blocked){ gs.blocked += dt; if (gs.blocked > 0.8) winGame(); }
-  },
-  draw(){
-    ctx.save();
-    if (gs.shakeP > 0) ctx.translate(rnd(-5,5)*U, 0);
-    /* téléphone */
-    ctx.fillStyle = '#10131c'; rr(gs.px - 8*U, gs.py - 8*U, gs.pw + 16*U, gs.ph + 16*U, 30*U); ctx.fill();
-    ctx.fillStyle = '#f2f4f8'; rr(gs.px, gs.py, gs.pw, gs.ph, 22*U); ctx.fill();
-    const cx = gs.px + gs.pw/2;
-    if (!gs.blocked){
-      txt('appel entrant...', cx, gs.py + gs.ph*0.12, 15*U, '#8a93a6');
-      const wob = Math.sin(G.t*14)*4*U;
-      txt('🤖', cx, gs.py + gs.ph*0.26 + wob, 52*U, '#000');
-      txt('ARNAQUE PROBABLE', cx, gs.py + gs.ph*0.4, Math.min(20*U, gs.pw/11), '#2a3040');
-      txt('« votre colis a un problème »', cx, gs.py + gs.ph*0.46, 13*U, '#8a93a6');
-      txt('📳 riiing riiing', cx, gs.py + gs.ph*0.53, 15*U, '#8a93a6');
-      /* bouton répondre (piège gentil) */
-      ctx.fillStyle = '#c8cdd8';
-      rr(cx - gs.bw/2, gs.py + gs.ph*0.78, gs.bw, 40*U, 20*U); ctx.fill();
-      txt(gs.noAnswer > 0 ? 'non merci !' : 'répondre', cx, gs.py + gs.ph*0.78 + 20*U, 15*U, '#6a7284');
-      /* bouton BLOQUER */
-      ctx.fillStyle = '#e03e3e';
-      rr(gs.bx, gs.by, gs.bw, gs.bh, 27*U); ctx.fill();
-      txt('🚫 BLOQUER', gs.bx + gs.bw/2, gs.by + gs.bh/2, 20*U, '#fff');
-    } else {
-      txt('✅', cx, gs.py + gs.ph*0.3, 60*U, '#000');
-      txt('BLOQUÉ.', cx, gs.py + gs.ph*0.48, 34*U, '#2aa04f');
-      txt('tranquillité retrouvée 💅', cx, gs.py + gs.ph*0.6, 18*U, '#8a93a6');
-    }
-    ctx.restore();
-  },
-  down(p){
-    if (gs.blocked) return;
-    const cx = gs.px + gs.pw/2;
-    /* bouton répondre ? */
-    if (p.x > cx - gs.bw/2 && p.x < cx + gs.bw/2 &&
-        p.y > gs.py + gs.ph*0.78 - 10*U && p.y < gs.py + gs.ph*0.78 + 50*U){
-      gs.noAnswer = 1.2; gs.shakeP = 1; buzz(); return;
-    }
-    /* bouton bloquer ? */
-    if (p.x > gs.bx - 10*U && p.x < gs.bx + gs.bw + 10*U &&
-        p.y > gs.by - 10*U && p.y < gs.by + gs.bh + 10*U){
-      if (gs.dodges > 0){
-        gs.dodges--; gs.shakeP = 1;
-        tone(700, 0.07, 'square', 0.08);
-        gs.bx = gs.px + rnd(10*U, gs.pw - gs.bw - 10*U);
-        gs.by = gs.py + rnd(gs.ph*0.52, gs.ph*0.68);
-      } else {
-        gs.blocked = 0.001;
-        jingleWin(); vibrate(40);
-        burst(W/2, H*0.4, 12, { txt: pick(['✨','💅','🎉']), size: 24*U });
-      }
-    }
-  },
-},
-
-/* ---------- 11. CRIE UN BON COUP ---------- */
+/* ---------- 10. CRIE UN BON COUP ---------- */
 {
   id: 'scream', title: 'CRIE UN BON COUP !', hint: 'tape tape tape — lâche tout 🗣️',
   icon: '🗣️', bg: ['#d1462e','#6e1414'], dur: 5,
@@ -1102,7 +1057,7 @@ const GAMES = [
   key(k){ if (k === ' ') this.down(); },
 },
 
-/* ---------- 12. TÂTE LE VIEUX ---------- */
+/* ---------- 11. TÂTE LE VIEUX ---------- */
 {
   id: 'vieux', title: 'TÂTE LE VIEUX !', hint: 'masse les jambes de M. Raymond, mains de kiné 💆',
   icon: '👴', bg: ['#a8c8e8','#4f7096'], dur: 6,
@@ -1224,7 +1179,17 @@ function drawHUD(){
   /* score + cœurs */
   txt(`★ ${G.score}`, W*0.05 + 4*U, 46*U, 20*U, '#fff', 'left');
   txt('❤️'.repeat(Math.max(0,G.hearts)) + '🖤'.repeat(3 - Math.max(0,G.hearts)), W*0.95, 46*U, 18*U, '#fff', 'right');
-  txt(`manche ${G.round}`, W/2, 46*U, 15*U, 'rgba(255,255,255,.7)');
+  txt(`manche ${G.round}`, W/2, 46*U, 13*U, 'rgba(255,255,255,.65)');
+  /* titre du mini-jeu, affiché pendant qu'on joue */
+  const title = G.cur.title;
+  const tSize = Math.min(22*U, (W*0.92)/(title.length*0.6));
+  txtOutline(title, W/2, 76*U, tSize, '#fff');
+  /* petit indice, qui s'efface après 2 secondes */
+  if (G.playT < 2.2){
+    ctx.globalAlpha = clamp((2.2 - G.playT)/0.5, 0, 1) * 0.9;
+    txt(G.cur.hint, W/2, 102*U, 14*U, '#fff');
+    ctx.globalAlpha = 1;
+  }
 }
 
 function drawTitle(){
@@ -1242,21 +1207,11 @@ function drawTitle(){
     aL: Math.PI/2 + 0.5, aR: -Math.PI/2 + Math.sin(G.t*4)*0.4,
     bob: Math.sin(G.t*2.5)*5*U, hairT: G.t,
   });
-  txt('12 mini-jeux · de plus en plus vite ⚡', W/2, H*0.78, 18*U, 'rgba(255,255,255,.95)');
+  txt('11 mini-jeux · de plus en plus vite ⚡', W/2, H*0.78, 18*U, 'rgba(255,255,255,.95)');
   if (G.best > 0) txt(`meilleur score : ${G.best}`, W/2, H*0.83, 16*U, '#ffde59');
   const blink = Math.sin(G.t*4) > -0.4;
   if (blink) txtOutline('TOUCHE POUR JOUER', W/2, H*0.9, 26*U, '#fff');
   txt('fait avec 💛 pour la plus forte', W/2, H*0.965, 13*U, 'rgba(255,255,255,.75)');
-}
-
-function drawIntro(){
-  const c = G.cur;
-  bgGrad(c.bg[0], c.bg[1]);
-  ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(0, H*0.3, W, H*0.34);
-  txt(c.icon, W/2, H*0.4, 64*U, '#fff');
-  txtOutline(c.title, W/2, H*0.52, Math.min(38*U, W/(c.title.length*0.62)), '#fff');
-  txt(c.hint, W/2, H*0.6, 17*U, 'rgba(255,255,255,.9)');
-  txt(`manche ${G.round} — vitesse ×${G.speed.toFixed(1)}`, W/2, H*0.7, 15*U, 'rgba(255,255,255,.7)');
 }
 
 function drawResult(){
@@ -1301,15 +1256,11 @@ function frame(now){
   }
 
   if (G.state === 'title'){ drawTitle(); }
-  else if (G.state === 'intro'){
-    drawIntro();
-    G.introT -= dt;
-    if (G.introT <= 0) G.state = 'play';
-  }
   else if (G.state === 'play'){
     bgGrad(G.cur.bg[0], G.cur.bg[1]);
     G.cur.update && G.cur.update(dt);
     if (G.state === 'play'){
+      G.playT += dt;
       G.timeLeft -= dt;
       if (G.timeLeft <= 0){ failGame(); }
     }

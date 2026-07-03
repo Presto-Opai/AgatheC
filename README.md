@@ -2,7 +2,7 @@
 
 Un petit jeu fait avec 💛 pour la plus forte.
 
-**12 mini-jeux qui s'enchaînent au hasard, de plus en plus vite.**
+**11 mini-jeux qui s'enchaînent au hasard, de plus en plus vite.**
 Chaque jeu est tout simple — mais la vitesse monte à chaque manche. 3 cœurs. Bonne chance.
 
 ## Les mini-jeux
@@ -12,7 +12,7 @@ Chaque jeu est tout simple — mais la vitesse monte à chaque manche. 3 cœurs.
 | 💥 Détruis tout ! | 🐈 Caresse le chat | 🎤 Chante juste ! |
 | 🚴 Pédale plus vite ! | 🤿 Nage plus profond ! | 🐟 Caresse le poisson |
 | 🦁 Combat la manticore ! | 💃 Danse danse danse ! | 🥞 Fais sauter la crêpe ! |
-| 🚫 Bloque le spam ! | 🗣️ Crie un bon coup ! | 👴 Tâte le vieux ! |
+| 🗣️ Crie un bon coup ! | 👴 Tâte le vieux ! | |
 
 ## Jouer
 
